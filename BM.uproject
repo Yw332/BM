@@ -60,7 +60,7 @@
 		},
 		{
 			"Name": "UnrealAgentLink",
-			"Enabled": false
+			"Enabled": true
 		}
 	]
 }

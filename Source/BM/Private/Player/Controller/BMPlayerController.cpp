@@ -76,7 +76,8 @@ void ABMPlayerController::SetupInputComponent()
 	if (!IsValid(EnhancedInputComponent)) return;
 
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABMPlayerController::Move);
-	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &ABMPlayerController::Run);
+	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &ABMPlayerController::Run_Start);
+	EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &ABMPlayerController::Run_Complete);
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABMPlayerController::Look);
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ABMPlayerController::Jump);
 	EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Triggered, this, &ABMPlayerController::Dodge);
@@ -97,7 +98,7 @@ void ABMPlayerController::Move(const FInputActionValue& Value)
 	ABMPlayerCharacter* BMPlayerCHC = Cast<ABMPlayerCharacter>(BMCharacter);
 	if (IsValid(BMPlayerCHC))
 	{
-		if (RunAlphaValue > 0.4)
+		if (bRunIsPressed)
 		{
 			BMPlayerCHC->SetCharacterGate(EBMCharacterGate::Run);
 		}
@@ -106,9 +107,6 @@ void ABMPlayerController::Move(const FInputActionValue& Value)
 			BMPlayerCHC->SetCharacterGate(EBMCharacterGate::Walk);
 		}
 	}
-	
-	RunAlphaValue /= 2;
-
 	/*const FRotator ControlRot = GetControlRotation();
 	const FRotator YawControlRot(0.f, ControlRot.Yaw, 0.f);
 	const FVector ForwardDirection = FRotationMatrix(YawControlRot).GetUnitAxis(EAxis::X);
@@ -120,11 +118,15 @@ void ABMPlayerController::Move(const FInputActionValue& Value)
 	BMCharacter->AddMovementInput(RightDirection, MovementVector.X);
 }
 
-void ABMPlayerController::Run(const FInputActionValue& Value)
+void ABMPlayerController::Run_Start(const FInputActionValue& Value)
 {
-	RunAlphaValue = 1;
+	bRunIsPressed = true;
 }
 
+void ABMPlayerController::Run_Complete(const FInputActionValue& Value)
+{
+	bRunIsPressed = false;
+}
 void ABMPlayerController::Look(const FInputActionValue& Value)
 {
 	FVector2D LookDirection = Value.Get<FVector2D>();

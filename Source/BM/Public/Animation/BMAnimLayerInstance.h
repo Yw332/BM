@@ -182,6 +182,10 @@ protected:
 	float TurnBackAngle = 160.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Turn")
 	float TurnFrontAngle = 90.0f;
+
+	/** 低于这个水平速度（cm/s）就不做转身判定，避免静止时误播转身动画。 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Turn")
+	float TurnMinSpeed = 50.0f;
 	// ~ End Settings
 private:
 	friend class UBMDebugAnimation;

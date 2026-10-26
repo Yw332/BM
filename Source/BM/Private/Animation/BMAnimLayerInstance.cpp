@@ -52,7 +52,9 @@ void UBMAnimLayerInstance::NativeUpdateAnimation(float DeltaSeconds)
 	}
 	
 	
-	UpdateCharacterTurn(DeltaSeconds);
+	// UpdateCharacterTurn 只在 NativeThreadSafeUpdateAnimation 里调一次。
+	// 这里（游戏线程）再调一次会和线程安全更新同时写 RootYawOffset / CharacterTurnType，
+	// 两者读写交错会让 CharacterTurnType 在一帧内被判定成转身，导致播放转身动画后又被打断。
 
 	DebugAnimation->DebugFunc(this);
 }
@@ -103,6 +105,16 @@ void UBMAnimLayerInstance::UpdateCharacterTurn(float DeltaSeconds)
 	}
 
 	CharacterTurnType = EBMTurnType::None;
+
+	// 角色站着（或几乎不动）时不做转身判定。
+	// 原来只看角度：静止时 ControlRotation 一旦和 ActorRotation 错开，
+	// RootYawOffset 就会被判成大幅转身，触发转身动画后又立刻被打断，
+	// 表现就是腿突然踢出、姿势扭曲。转身动画应该在移动中才播。
+	if (CharacterSpeed < TurnMinSpeed)
+	{
+		return;
+	}
+
 	if(RootYawOffset > TurnBackAngle)
 	{
 		CharacterTurnType = EBMTurnType::LeftToBack;

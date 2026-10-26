@@ -38,7 +38,8 @@ protected:
 	virtual void InitAbilityActorInfo();
 
 	void Move(const FInputActionValue& Value);
-	void Run(const FInputActionValue& Value);
+	void Run_Start(const FInputActionValue& Value);
+	void Run_Complete(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void Jump(const FInputActionValue& Value);
 	void Dodge(const FInputActionValue& Value);
@@ -92,7 +93,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category="BM|Input")
 	UInputAction* ChangeStickAction;
 
-	float RunAlphaValue = 0.f;
+	bool bRunIsPressed = false;
 #pragma endregion
 
 
