@@ -52,4 +52,12 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UAbilityTask_PlayMontageAndWait> MontageTask;
+
+	/** 闪避动画播放到多少比例时结束无敌帧（0~1）。0 = 一直无敌到闪避开完。 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="BM")
+	float InvincibleEndRatio = 0.75f;
+
+	FTimerHandle InvincibleEndTimerHandle;
+	void BeginInvincibleWindow();
+	void EndInvincibleWindow();
 };

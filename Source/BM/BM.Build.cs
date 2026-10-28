@@ -14,7 +14,8 @@ public class BM : ModuleRules
             "OnlineSubsystemSteam",
             "OnlineSubsystemUtils",
 			"GameplayAbilities",
-			"GameplayTasks","RetSteam","GameplayTags"
+			"GameplayTasks", "RetSteam", "GameplayTags",
+			"AIModule"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {

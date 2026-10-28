@@ -5,6 +5,7 @@
 #include "GameFramework/Character.h"
 #include "KismetTraceUtils.h"
 #include "AbilitySystem/BMGameplayAbility.h"
+#include "Player/Character/BMBaseCharacter.h"
 
 void UBMANS_Attack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
@@ -72,7 +73,7 @@ void UBMANS_Attack::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBa
 		
 		NowWorld->LineTraceMultiByChannel(OutHits, CurrentLocation, TraceLocations[Index], ECC_Pawn, Params);
 		FColor LineColor = OutHits.Num() > 0 ? FColor::Red : FColor::Green;
-		// DrawDebugLine(NowWorld, CurrentLocation, TraceLocations[Index], LineColor, false, 5.f, 0, 1.f);
+		DrawDebugLine(NowWorld, CurrentLocation, TraceLocations[Index], LineColor, false, 5.f, 0, 1.f);
 		
 		for (const FHitResult& Hit : OutHits)
 		{
@@ -82,6 +83,28 @@ void UBMANS_Attack::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBa
 			if (!ASI) continue;
 			TouchedActors.AddUnique(Hit.GetActor());
 			Params.AddIgnoredActor(Hit.GetActor());
+
+			// 击退：只对 Character 生效（对静态物件调 LaunchCharacter 没有意义）。
+			// 方向默认沿攻击方朝向（从攻击者指向目标），可选改成“背离攻击者”。
+			if (KnockbackStrength > 0.f)
+			{
+				if (ACharacter* HitCharacter = Cast<ACharacter>(Hit.GetActor()))
+				{
+					FVector KnockDir = HitCharacter->GetActorLocation() - MeshComp->GetOwner()->GetActorLocation();
+					KnockDir.Z = 0.f;
+					if (!KnockDir.Normalize())
+					{
+						// 两者位置重合时退化成攻击者正前方，避免零向量。
+						KnockDir = MeshComp->GetOwner()->GetActorForwardVector();
+						KnockDir.Z = 0.f;
+						KnockDir.Normalize();
+					}
+
+					const FVector Launch = KnockDir * KnockbackStrength + FVector(0.f, 0.f, KnockbackUpward);
+					// bXYOverride = true：覆盖目标当前水平速度，否则减速中的目标只会被轻微推一下。
+					HitCharacter->LaunchCharacter(Launch, true, false);
+				}
+			}
 			
 			if (UBMASCBase* ASC = Cast<UBMASCBase>(ASI->GetAbilitySystemComponent()))
 			{
@@ -98,7 +121,19 @@ void UBMANS_Attack::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBa
 				{
 					ASC->ApplyEffectByClass(InfiniteEffectClass);
 				}
-				
+
+				// 触发受击。玩家打小怪走的是这条路径（不是 DoDamageToActor），
+				// 所以受击必须在这里也触发一次，否则小怪永远不播受击。
+				// 注意：只对同一挥砍里第一次命中的目标触发，避免每帧重复打断。
+				if (ABMBaseCharacter* TargetChar = Cast<ABMBaseCharacter>(Hit.GetActor()))
+				{
+					// 受击无敌窗兼做去重：已经在无敌窗内就不再触发受击。
+					if (!TargetChar->IsInvincible())
+					{
+						TargetChar->ApplyHitInvincibleWindow();
+						TargetChar->PlayHitReact(MeshComp->GetOwner());
+					}
+				}
 			}
 			
 		}
