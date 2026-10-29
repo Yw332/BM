@@ -174,3 +174,35 @@ void ABMNPCCharacter::ResumeBehaviorTree()
 	}
 }
 
+EBMHitDirection ABMNPCCharacter::ComputeHitDirection(AActor* DamageCauser, float FrontBackThreshold) const
+{
+	if (!IsValid(DamageCauser)) return EBMHitDirection::Front;
+
+	// 攻击者相对自己的方向（水平面）
+	FVector ToAttacker = DamageCauser->GetActorLocation() - GetActorLocation();
+	ToAttacker.Z = 0.f;
+	if (!ToAttacker.Normalize())
+	{
+		return EBMHitDirection::Front;   // 位置重合，当成正面挨打
+	}
+
+	// 转到自己的局部空间，算出夹角：0 = 正前，180/-180 = 正后，+90 = 右，-90 = 左
+	const FVector Forward = GetActorForwardVector();
+	const FVector Right = GetActorRightVector();
+	const float ForwardDot = FVector::DotProduct(Forward, ToAttacker);
+	const float RightDot = FVector::DotProduct(Right, ToAttacker);
+	const float Angle = FMath::RadiansToDegrees(FMath::Atan2(RightDot, ForwardDot));
+
+	const float Threshold = FMath::Clamp(FrontBackThreshold, 1.f, 90.f);
+
+	if (FMath::Abs(Angle) <= Threshold)
+	{
+		return EBMHitDirection::Front;
+	}
+	if (FMath::Abs(Angle) >= 180.f - Threshold)
+	{
+		return EBMHitDirection::Back;
+	}
+	return (Angle > 0.f) ? EBMHitDirection::Right : EBMHitDirection::Left;
+}
+
